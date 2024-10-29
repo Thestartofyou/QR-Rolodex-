@@ -1,0 +1,79 @@
+import SwiftUI
+import CodeScanner
+
+struct QRRolodexView: View {
+    @State private var qrCodes: [String] = [] // Array to store QR codes
+    @State private var searchText: String = ""
+    @State private var isShowingScanner = false // Control when to show the scanner
+    
+    var body: some View {
+        NavigationView {
+            VStack {
+                // Search Bar
+                TextField("Search QR codes...", text: $searchText)
+                    .padding()
+                    .background(Color(.systemGray6))
+                    .cornerRadius(10)
+                    .padding(.horizontal)
+                
+                // Button to scan a new QR code
+                Button(action: {
+                    isShowingScanner = true
+                }) {
+                    HStack {
+                        Image(systemName: "qrcode.viewfinder")
+                        Text("Scan New QR Code")
+                            .bold()
+                    }
+                    .padding()
+                    .frame(maxWidth: .infinity)
+                    .background(Color.blue)
+                    .foregroundColor(.white)
+                    .cornerRadius(10)
+                    .padding(.horizontal)
+                }
+                
+                // List of scanned QR codes
+                if qrCodes.isEmpty {
+                    Text("No QR codes yet")
+                        .foregroundColor(.gray)
+                        .padding(.top, 50)
+                } else {
+                    List(filteredQRCodes(), id: \.self) { code in
+                        Text(code)
+                    }
+                }
+            }
+            .navigationBarTitle("QR Rolodex")
+            .sheet(isPresented: $isShowingScanner) {
+                CodeScannerView(codeTypes: [.qr], completion: handleScan)
+            }
+        }
+    }
+    
+    // Filter QR codes based on search text
+    private func filteredQRCodes() -> [String] {
+        if searchText.isEmpty {
+            return qrCodes
+        } else {
+            return qrCodes.filter { $0.contains(searchText) }
+        }
+    }
+    
+    // Handle scanning result
+    private func handleScan(result: Result<String, CodeScannerView.ScanError>) {
+        isShowingScanner = false
+        switch result {
+        case .success(let code):
+            qrCodes.append(code)
+        case .failure(let error):
+            print("Scanning failed: \(error.localizedDescription)")
+        }
+    }
+}
+
+struct QRRolodexView_Previews: PreviewProvider {
+    static var previews: some View {
+        QRRolodexView()
+    }
+}
